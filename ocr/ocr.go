@@ -2,8 +2,8 @@ package ocr
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"regexp"
@@ -59,7 +59,14 @@ func ExtractTextFromLocalImage(filename string) (*string, error) {
 		}
 	}
 
-	return &labels[0].Description, nil
+	textToParse := labels[0].Description
+
+	parsedDate, err := ParseDateFromText(textToParse)
+	if err != nil {
+		return nil, err
+	}
+
+	return parsedDate, nil
 
 }
 
@@ -89,27 +96,41 @@ func ExtractTextFromRemote(imageUri string) (*string, error) {
 		}
 	}
 
-	return &texts[0].Description, nil
-}
+	textToParse := texts[0].Description
 
-func ParseDateFromText() (*string, error) {
-	content, err := ioutil.ReadFile("resultDyskolo.txt")
+	parsedDate, err := ParseDateFromText(textToParse)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	stringContent := string(content)
+	return parsedDate, nil
+}
 
-	fmt.Println(stringContent)
-
-	// TODO parse regex
+func ParseDateFromText(stringContent string) (*string, error) {
 
 	match, err := regexp.MatchString(MatchAllValidDates, stringContent)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Printf("Could not apply match string function %v", err)
+		return nil, err
 	}
-	fmt.Println(match)
 
-	return nil, nil
+	if match {
+		r, _ := regexp.Compile(MatchAllValidDates)
+		if err != nil {
+			fmt.Printf("Error while compiling regex:  %v\n", err)
+			return nil, err
+		}
+
+		result := r.FindString(stringContent)
+		if len(result) == 0 {
+			return nil, errors.New("found matches but an empty one")
+		}
+
+		return &result, nil
+
+	} else {
+		return nil, errors.New("no matches found on given text content")
+	}
+
 }
