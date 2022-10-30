@@ -3,8 +3,10 @@ package ocr
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
+	"regexp"
 
 	vision "cloud.google.com/go/vision/apiv1"
 
@@ -88,4 +90,26 @@ func ExtractTextFromRemote(imageUri string) (*string, error) {
 	}
 
 	return &texts[0].Description, nil
+}
+
+func ParseDateFromText() (*string, error) {
+	content, err := ioutil.ReadFile("resultDyskolo.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	stringContent := string(content)
+
+	fmt.Println(stringContent)
+
+	// TODO parse regex
+
+	match, err := regexp.MatchString(MatchAllValidDates, stringContent)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(match)
+
+	return nil, nil
 }
